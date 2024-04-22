@@ -6,8 +6,10 @@ const   db = {};
 db.mongoose = mongoose;
 
 db.user = require("./user.model");
-db.role = require("./role.model");
-db.mensaje=require("./mensajes.model");
+db.Producto=require("./productos");
+db.venta=require("./venta");
+// db.role = require("./role.model");
+// db.mensaje=require("./mensajes.model");
 
 
 module.exports = db;

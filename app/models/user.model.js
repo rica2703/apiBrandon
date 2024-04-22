@@ -2,21 +2,16 @@ const mongoose = require("mongoose");
 
 const User = mongoose.model(
   "User",
-  new mongoose.Schema({
-    nombre:String,
-    password: String,
-    email: String,
-    numCelular:Number,
-    nombreEmergencia:String,
-    numEmergencia:Number,
-    numCuarto:Number,
+  new mongoose.Schema({    
     username: String,
-    roles: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Role"
-      }
-    ],
+    password: String,
+    email: String
+    // roles: [
+    //   {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "Role"
+    //   }
+    // ],
   })
 );
 

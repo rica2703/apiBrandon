@@ -1,80 +1,91 @@
 const config = require("../config/auth.config");
 const db = require("../models");
 const User = db.user;
-const Role = db.role;
-const Mensaje=db.mensaje;
+const Producto=db.Producto;
+const Venta=db.venta;
 
 
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcryptjs");
 
-exports.createMensaje = async (req, res) => {
-  try {
-    const { username, contenido, fecha } = req.body;
-
-    // Crear una nueva instancia del modelo de mensaje
-    const nuevoMensaje = new Mensaje({
-      username: username,
-      contenido: contenido,
-      fecha: fecha
-    });
-
-    // Guardar el nuevo mensaje en la base de datos
-    const mensajeGuardado = await nuevoMensaje.save();
-
-    res.status(201).json({ message: 'Mensaje agregado correctamente', mensaje: mensajeGuardado });
-  } catch (error) {
-    console.error('Error al agregar el mensaje:', error);
-    res.status(500).json({ message: 'Error al agregar el mensaje', error: error.message });
-  }
-};
-
-
-exports.getAllMensajes = (req, res) => {
-  Mensaje.find()
-    .then(mensajes => {
-      res.status(200).json(mensajes);
+exports.getAllProducts = (req, res) => {
+  Producto.find()
+    .then((products) => {
+      res.status(200).json(products);
     })
-    .catch(err => {
-      res.status(500).send({ message: err.message || "Error al obtener todos los mensajes." });
+    .catch((err) => {
+      res.status(500).send({ message: err.message || "Error retrieving products." });
     });
+}
+exports.createVenta =(req, res) => {
+  const venta = new Venta({
+    productos:req.body.productos,
+    fecha:req.body.fecha,
+    total:req.body.total,
+    hora:req.body.hora,
+    usuario:req.body.usuario,
+  });
+  venta.save((err, venta) => {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+    // res.status(200).send({ message: "Product created successfully!" });
+    res.status(200).send({
+      productos:venta.productos,
+      fecha:venta.fecha,
+      total:venta.total,
+      hora:venta.hora,
+      usuario:venta.usuario,
+    });
+  });
+ 
 };
-exports.getUserByNumCuarto = (req, res) => {
-  const numCuarto = req.params.numCuarto;
+exports.getAllVentas = (req, res) => {
+  Venta.find()
+    .then((ventas) => {
+      res.status(200).json(ventas);
+    })
+    .catch((err) => {
+      res.status(500).send({ message: err.message || "Error retrieving ventas" });
+    });
+}
+
+exports.createProduct = (req, res) => {
+  const producto = new Producto({
+    codigo:req.body.codigo,
+    nombre: req.body.nombre,
+    precio: req.body.precio,
+    cantidad:req.body.cantidad,
+  });
+  producto.save((err, stock) => {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+    // res.status(200).send({ message: "Product created successfully!" });
+    res.status(200).send({
+      codigo: stock.codigo,
+      nombre: stock.nombre,
+      precio: stock.precio,
+      cantidad: stock.cantidad,
+    });
+  });
+} 
+
+exports.getProductByCode = (req, res) => {
+  const codigo = req.params.codigo;
 
   // Buscar al usuario por su número de cuarto
-  User.findOne({ numCuarto: numCuarto })
-    .then(user => {
-      if (!user) {
-        return res.status(404).json({ message: `Usuario con número de cuarto ${numCuarto} no encontrado.` });
+  Producto.findOne({ codigo:codigo })
+    .then(producto => {
+      if (!producto) {
+        return res.status(404).json({ message: `Producto no encontradp` });
       }
-      res.status(200).json({ message: "Usuario encontrado correctamente", user });
+      res.status(200).json(producto);
     })
     .catch(err => {
-      res.status(500).json({ message: 'Error al buscar usuario por número de cuarto', error: err.message });
-    });
-};
-exports.updateUserById = (req, res) => {
-  const numCuarto = req.params.numCuarto;
-  const updatedData = {
-    username: req.body.username,
-    email: req.body.email,
-    nombre: req.body.nombre,
-    numCelular: req.body.numCelular,
-    nombreEmergencia: req.body.nombreEmergencia,
-    numEmergencia: req.body.numEmergencia,
-  };
-
-  // Encuentra y actualiza al usuario por su número de cuarto
-  User.findOneAndUpdate({ numCuarto: numCuarto }, updatedData, { new: true })
-    .then(user => {
-      if (!user) {
-        return res.status(404).send({ message: `Usuario con número de cuarto ${numCuarto} no encontrado.` });
-      }
-      res.status(200).send({ message: "Usuario actualizado correctamente", user });
-    })
-    .catch(err => {
-      res.status(500).send({ message: err.message || "Error al actualizar usuario por número de cuarto." });
+      res.status(500).json({ message: 'Error al buscar producto', error: err.message });
     });
 };
 
@@ -107,58 +118,16 @@ exports.deleteUserById = (req, res) => {
 exports.signup = (req, res) => {
   const user = new User({
     username: req.body.username,
-    email: req.body.email,
     password: bcrypt.hashSync(req.body.password, 8),
-    nombre: req.body.nombre,
-    numCelular: req.body.numCelular,
-    nombreEmergencia: req.body.nombreEmergencia,
-    numEmergencia: req.body.numEmergencia,
-    numCuarto: req.body.numCuarto,
+    email: req.body.email,
   });
 
   user.save((err, user) => {
     if (err) {
       res.status(500).send({ message: err });
       return;
-    }
-
-    if (req.body.roles) {
-      Role.find(
-        {
-          name: { $in: req.body.roles }
-        },
-        (err, roles) => {
-          if (err) {
-            res.status(500).send({ message: err });
-            return;
-          }
-
-          user.roles = roles.map(role => role._id);
-          user.save(err => {
-            if (err) {
-              res.status(500).send({ message: err });
-              return;
-            }
-
-            res.send({ message: "Usuario registrado satisfactoriamente!",user});
-          });
-        }
-      );
     } else {
-      Role.findOne({ name: "user" }, (err, role) => {
-        if (err) {
-          res.status(500).send({ message: err });
-          return;
-        }
-        user.roles = [role._id];
-        user.save(err => {
-          if (err) {
-            res.status(500).send({ message: err });
-            return;
-          }
-          res.send({ message: "Usuario registrado satisfactoriamente!!" });
-        });
-      });
+      res.send({ message: "Usuario registrado satisfactoriamente!!" });
     }
   });
 };
@@ -166,9 +135,9 @@ exports.signup = (req, res) => {
 exports.signin = (req, res) => {
   try {
     User.findOne({
-      numCuarto: req.body.numCuarto
+      username: req.body.username
     })
-      .populate("roles", "-__v")
+      // .populate("roles", "-__v")
       .exec((err, user) => {
         if (err) {
           console.error('Error al buscar usuario:', err);
@@ -176,7 +145,7 @@ exports.signin = (req, res) => {
         }
 
         if (!user) {
-          return res.status(404).send({ message: "Número de cuarto no encontrado." });
+          return res.status(404).send({ message: "usuario no encontrado." });
         }
 
         var passwordIsValid = bcrypt.compareSync(
@@ -199,21 +168,14 @@ exports.signin = (req, res) => {
             expiresIn: 86400, // 24 horas
           });
 
-        var authorities = [];
+        // var authorities = [];
 
-        for (let i = 0; i < user.roles.length; i++) {
-          authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
-        }
+        // for (let i = 0; i < user.roles.length; i++) {
+        //   authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
+        // }
         res.status(200).send({
-          id: user._id,
           username: user.username,
           email: user.email,
-          nombre: user.nombre,
-          numCelular: user.numCelular,
-          nombreEmergencia: user.nombreEmergencia,
-          numEmergencia: user.numEmergencia,
-          numCuarto: user.numCuarto,
-          roles: authorities,
           accessToken: token
         });
       });
